@@ -1,0 +1,55 @@
+hostname: harvester-master
+k3os:
+  dnsNameservers:
+  - 192.168.10.74
+  k3sArgs:
+  - server
+  - --disable
+  - local-storage
+  - --node-label
+  - svccontroller.k3s.cattle.io/enablelb=true
+  - --flannel-iface
+  - eth0
+  modules:
+  - kvm
+  - vhost_net
+  ntpServers:
+  - ntp.ubuntu.com
+  password: $6$7AUtdOU8WIk3CndI$nvFjdlGaYbRP6ccAaVZSwAjcxJJOnb9y6sGVaL/MwOZ/e9hb4dvMs1UmAmZay3OPJmOxcc2xlCiYkgnvKyNLW.
+  token: rancher
+writeFiles:
+- content: |
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: harvester-system
+    ---
+    apiVersion: helm.cattle.io/v1
+    kind: HelmChart
+    metadata:
+      name: harvester
+      namespace: kube-system
+    spec:
+      chart: https://%{KUBERNETES_API}%/static/charts/harvester-0.1.0.tgz
+      targetNamespace: harvester-system
+      set:
+        multus.enabled: "true"
+        longhorn.enabled: "true"
+        minio.persistence.storageClass: "longhorn"
+        containers.apiserver.image.imagePullPolicy: "IfNotPresent"
+        harvester-network-controller.image.pullPolicy: "IfNotPresent"
+        service.harvester.type: "LoadBalancer"
+        containers.apiserver.authMode: "localUser"
+  encoding: ""
+  owner: root
+  path: /var/lib/rancher/k3s/server/manifests/harvester.yaml
+  permissions: "0600"
+- content: |
+    mirrors:
+      docker.io:
+        endpoint:
+          - "https://7bezldxe.mirror.aliyuncs.com"
+  encoding: ""
+  owner: root
+  path: /etc/rancher/k3s/registries.yaml
+  permissions: "0755"
